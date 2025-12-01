@@ -42,6 +42,78 @@ bool Parser::is_valid_key(std::string_view key) noexcept {
   return true;
 }
 
+// Dispatch to quoted or unquoted value parsing based on the first character.
+std::string Parser::parse_value(std::string_view raw, const std::filesystem::path &file, std::size_t line_no) {
+  if (raw.empty()) {
+    return {};
+  }
+
+  const char first = raw.front();
+  if (first == '"' || first == '\'') {
+    return parse_quoted_value(raw, first, file, line_no);
+  }
+
+  return parse_unquoted_value(raw);
+}
+
+// Extract value between matching quotes, processing escape sequences in double-quoted strings.
+std::string Parser::parse_quoted_value(std::string_view raw, char quote_char, const std::filesystem::path &file, std::size_t line_no) {
+  std::string result;
+  result.reserve(raw.size());
+
+  std::size_t i = 1; // skip opening quote
+  bool closed = false;
+
+  while (i < raw.size()) {
+    char c = raw[i];
+
+    if (c == '\\' && i + 1 < raw.size()) {
+      char next = raw[i + 1];
+      switch (next) {
+      case '\\':
+        result += '\\';
+        break;
+      case '"':
+        result += '"';
+        break;
+      case '\'':
+        result += '\'';
+        break;
+      case 'n':
+        result += '\n';
+        break;
+      case 't':
+        result += '\t';
+        break;
+      case 'r':
+        result += '\r';
+        break;
+      default:
+        result += '\\';
+        result += next;
+        break;
+      }
+      i += 2;
+      continue;
+    }
+
+    if (c == quote_char) {
+      closed = true;
+      i++;
+      break;
+    }
+
+    result += c;
+    i++;
+  }
+
+  if (!closed) {
+    throw ParseError(file, line_no, std::string("unterminated quoted value (missing closing ") + quote_char + ")");
+  }
+
+  return result;
+}
+
 // Return a trimmed unquoted value, stripping any inline comment after ' #'.
 std::string Parser::parse_unquoted_value(std::string_view raw) noexcept {
   // Strip inline comments: '#' preceded by whitespace.
