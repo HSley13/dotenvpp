@@ -1,0 +1,9 @@
+build/
+mnt/
+.DS_Store
+*.o
+*.a
+*.so
+*.dylib
+CMakeUserPresets.json
+_build_history.py
