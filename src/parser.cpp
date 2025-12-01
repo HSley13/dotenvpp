@@ -5,6 +5,52 @@
 
 namespace dotenvpp {
 
+// Split .env file content into lines and extract key-value pairs.
+Parser::EnvMap Parser::parse(std::string_view content, const std::filesystem::path &filepath) {
+  EnvMap result;
+
+  std::size_t pos = 0;
+  std::size_t line_no = 0;
+  const std::size_t sz = content.size();
+
+  while (pos <= sz) {
+    line_no++;
+
+    std::size_t newline = content.find('\n', pos);
+    std::size_t end = (newline == std::string_view::npos) ? sz : newline;
+    std::string_view raw_line = content.substr(pos, end - pos);
+    pos = end + 1;
+
+    // Strip \r from Windows-style line endings.
+    if (!raw_line.empty() && raw_line.back() == '\r') {
+      raw_line.remove_suffix(1);
+    }
+
+    std::string_view line = trim(raw_line);
+
+    if (is_ignorable(line)) continue;
+
+    std::size_t eq_pos = line.find('=');
+    if (eq_pos == std::string_view::npos) {
+      throw ParseError(filepath, line_no, "expected KEY=VALUE format but found no '='");
+    }
+
+    std::string_view key_raw = trim(line.substr(0, eq_pos));
+    if (!is_valid_key(key_raw)) {
+      throw ParseError(filepath, line_no, "invalid key '" + std::string(key_raw) + "': "
+                                                                                   "keys must be non-empty and contain only [A-Za-z0-9_]");
+    }
+
+    std::string_view value_raw = trim(line.substr(eq_pos + 1));
+    std::string value = parse_value(value_raw, filepath, line_no);
+
+    // First occurrence wins on duplicate keys.
+    result.try_emplace(std::string(key_raw), std::move(value));
+  }
+
+  return result;
+}
+
 // Strip leading and trailing whitespace (spaces, tabs, vertical tab, form feed, carriage return).
 std::string_view Parser::trim(std::string_view s) noexcept {
   auto is_ws = [](unsigned char c) {
