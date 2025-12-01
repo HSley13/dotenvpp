@@ -42,4 +42,20 @@ bool Parser::is_valid_key(std::string_view key) noexcept {
   return true;
 }
 
+// Return a trimmed unquoted value, stripping any inline comment after ' #'.
+std::string Parser::parse_unquoted_value(std::string_view raw) noexcept {
+  // Strip inline comments: '#' preceded by whitespace.
+  for (std::size_t i = 1; i < raw.size(); i++) {
+    if (raw[i] == '#') {
+      unsigned char prev = static_cast<unsigned char>(raw[i - 1]);
+      if (prev == ' ' || prev == '\t') {
+        raw = raw.substr(0, i - 1);
+        break;
+      }
+    }
+  }
+
+  return std::string(trim(raw));
+}
+
 } // namespace dotenvpp
