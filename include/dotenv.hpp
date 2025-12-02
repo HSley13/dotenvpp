@@ -37,4 +37,28 @@ struct LoadResult {
   [[nodiscard]] bool ok() const noexcept { return !files_loaded.empty(); }
 };
 
+/// Search for .env files and inject their contents into the process environment.
+LoadResult load(LoadOptions opts = {});
+
+/// Parse a single .env file and inject its contents into the process environment.
+LoadResult load_file(const std::filesystem::path &path, bool overwrite = false);
+
+/// Read an environment variable, returning @p default_value if unset.
+[[nodiscard]]
+std::string get(std::string_view key, std::string_view default_value = "");
+
+/// Return true if the environment variable @p key is set (even if empty).
+[[nodiscard]]
+bool has(std::string_view key) noexcept;
+
+/// Read a required environment variable; throws std::runtime_error if unset.
+[[nodiscard]]
+std::string require(std::string_view key);
+
+/// Set an environment variable. Throws std::runtime_error on failure.
+void set(std::string_view key, std::string_view value, bool overwrite = true);
+
+/// Remove an environment variable from the process environment.
+void unset(std::string_view key) noexcept;
+
 } // namespace dotenvpp
