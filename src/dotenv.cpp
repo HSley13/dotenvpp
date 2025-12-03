@@ -115,5 +115,32 @@ LoadResult load_file(const std::filesystem::path &path, bool overwrite) {
   return result;
 }
 
+std::string get(std::string_view key, std::string_view default_value) {
+  const char *val = std::getenv(std::string(key).c_str());
+  return val ? std::string(val) : std::string(default_value);
+}
+
+bool has(std::string_view key) noexcept {
+  return std::getenv(std::string(key).c_str()) != nullptr;
+}
+
+std::string require(std::string_view key) {
+  const char *val = std::getenv(std::string(key).c_str());
+  if (!val) {
+    throw std::runtime_error("[dotenvpp] Required environment variable '" + std::string(key) + "' is not set");
+  }
+  return std::string(val);
+}
+
+void set(std::string_view key, std::string_view value, bool overwrite) {
+  std::string k(key), v(value);
+  if (!env_set(k.c_str(), v.c_str(), overwrite)) {
+    throw std::runtime_error("[dotenvpp] Failed to set environment variable '" + k + "'");
+  }
+}
+
+void unset(std::string_view key) noexcept {
+  env_unset(std::string(key).c_str());
+}
 
 } // namespace dotenvpp
