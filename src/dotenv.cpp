@@ -64,4 +64,56 @@ std::string read_file_contents(const std::filesystem::path &path) {
 }
 
 } // namespace
+
+LoadResult load(LoadOptions opts) {
+  std::filesystem::path root = opts.root.value_or(Searcher::cmake_source_dir());
+
+  Searcher searcher(opts.search);
+  auto found = searcher.find(root);
+
+  LoadResult result;
+  result.files_found = found;
+
+  if (found.empty()) {
+    if (opts.throw_if_missing) {
+      throw std::runtime_error("[dotenvpp] No .env file found under: " + root.string());
+    }
+    return result;
+  }
+
+  for (const auto &file_path : found) {
+    try {
+      auto content = read_file_contents(file_path);
+      auto parsed = Parser::parse(content, file_path);
+      auto [loaded, skipped] = inject_into_env(parsed, opts.overwrite);
+
+      result.files_loaded.push_back(file_path);
+      result.keys_loaded += loaded;
+      result.keys_skipped += skipped;
+    } catch (const ParseError &) {
+      throw;
+    } catch (const std::filesystem::filesystem_error &) {
+      result.files_failed.push_back(file_path);
+    }
+  }
+
+  return result;
+}
+
+LoadResult load_file(const std::filesystem::path &path, bool overwrite) {
+  LoadResult result;
+  result.files_found = {path};
+
+  auto content = read_file_contents(path);
+  auto parsed = Parser::parse(content, path);
+  auto [loaded, skipped] = inject_into_env(parsed, overwrite);
+
+  result.files_loaded = {path};
+  result.keys_loaded = loaded;
+  result.keys_skipped = skipped;
+
+  return result;
+}
+
+
 } // namespace dotenvpp
