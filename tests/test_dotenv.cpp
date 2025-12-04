@@ -217,6 +217,144 @@ TEST("parser: throws ParseError on invalid key character (hyphen)") {
   EXPECT_THROW(dotenvpp::Parser::parse("MY-KEY=value\n"), dotenvpp::ParseError);
 }
 
+// Searcher tests
+
+TEST("searcher: finds .env in root directory") {
+  TempDir tmp;
+  tmp.write(".env", "KEY=val\n");
+
+  dotenvpp::Searcher s;
+  auto results = s.find(tmp.path());
+
+  EXPECT_EQ(results.size(), std::size_t(1));
+  EXPECT_EQ(results[0].filename().string(), ".env");
+}
+
+TEST("searcher: finds .env in allowed subdirectory (src)") {
+  TempDir tmp;
+  tmp.write("src/.env", "SRC_KEY=val\n");
+
+  dotenvpp::Searcher s;
+  auto results = s.find(tmp.path());
+
+  EXPECT_EQ(results.size(), std::size_t(1));
+  EXPECT_TRUE(results[0].string().find("src") != std::string::npos);
+}
+
+TEST("searcher: does NOT enter disallowed directory (build)") {
+  TempDir tmp;
+  tmp.write("build/.env", "SHOULD_NOT_FIND=1\n");
+
+  dotenvpp::Searcher s;
+  auto results = s.find(tmp.path());
+
+  EXPECT_EQ(results.size(), std::size_t(0));
+}
+
+TEST("searcher: finds .env files in multiple allowed subdirs") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+  tmp.write("tests/.env", "TESTS=1\n");
+  tmp.write("config/.env", "CONFIG=1\n");
+
+  dotenvpp::Searcher s;
+  auto results = s.find(tmp.path());
+
+  EXPECT_EQ(results.size(), std::size_t(4));
+}
+
+TEST("searcher: root-first priority — root .env comes first") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+
+  dotenvpp::SearchOptions opts;
+  opts.root_first_priority = true;
+  dotenvpp::Searcher s(opts);
+
+  auto results = s.find(tmp.path());
+  EXPECT_EQ(results.size(), std::size_t(2));
+  EXPECT_TRUE(results[0].parent_path() == tmp.path());
+}
+
+TEST("searcher: leaf-first priority — deeper .env comes first") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+
+  dotenvpp::SearchOptions opts;
+  opts.root_first_priority = false;
+  dotenvpp::Searcher s(opts);
+
+  auto results = s.find(tmp.path());
+  EXPECT_EQ(results.size(), std::size_t(2));
+  EXPECT_TRUE(results[0].string().find("src") != std::string::npos);
+}
+
+TEST("searcher: max_depth=0 skips all subdirectories") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+
+  dotenvpp::SearchOptions opts;
+  opts.max_depth = 0;
+  dotenvpp::Searcher s(opts);
+
+  auto results = s.find(tmp.path());
+  EXPECT_EQ(results.size(), std::size_t(1));
+  EXPECT_TRUE(results[0].parent_path() == tmp.path());
+}
+
+TEST("searcher: find_first returns highest-priority result") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+
+  dotenvpp::Searcher s;
+  auto first = s.find_first(tmp.path());
+
+  EXPECT_TRUE(first.has_value());
+  EXPECT_TRUE(first->parent_path() == tmp.path());
+}
+
+TEST("searcher: find_first returns nullopt when nothing found") {
+  TempDir tmp;
+
+  dotenvpp::Searcher s;
+  auto first = s.find_first(tmp.path());
+
+  EXPECT_FALSE(first.has_value());
+}
+
+TEST("searcher: search_root=false skips the root .env") {
+  TempDir tmp;
+  tmp.write(".env", "ROOT=1\n");
+  tmp.write("src/.env", "SRC=1\n");
+
+  dotenvpp::SearchOptions opts;
+  opts.search_root = false;
+  dotenvpp::Searcher s(opts);
+
+  auto results = s.find(tmp.path());
+  EXPECT_EQ(results.size(), std::size_t(1));
+  EXPECT_TRUE(results[0].string().find("src") != std::string::npos);
+}
+
+TEST("searcher: custom filename (.env.local)") {
+  TempDir tmp;
+  tmp.write(".env", "IGNORED=1\n");
+  tmp.write(".env.local", "LOCAL=1\n");
+
+  dotenvpp::SearchOptions opts;
+  opts.filename = ".env.local";
+  dotenvpp::Searcher s(opts);
+
+  auto results = s.find(tmp.path());
+  EXPECT_EQ(results.size(), std::size_t(1));
+  EXPECT_EQ(results[0].filename().string(), ".env.local");
+}
+
 // Test runner
 
 int main() {
