@@ -56,3 +56,9 @@ if(PROJECT_IS_TOP_LEVEL)
         )
     endif()
 endif()
+
+# Optionally build and register the test suite with CTest.
+if(DOTENVPP_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
