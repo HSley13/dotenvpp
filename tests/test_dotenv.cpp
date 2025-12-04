@@ -355,6 +355,146 @@ TEST("searcher: custom filename (.env.local)") {
   EXPECT_EQ(results[0].filename().string(), ".env.local");
 }
 
+// Integration tests (load / load_file / get / has / require / set / unset)
+
+// Remove environment variables to avoid cross-test pollution.
+static void cleanup(std::initializer_list<const char *> keys) {
+  for (const char *k : keys) dotenvpp::unset(k);
+}
+
+TEST("load_file: injects variables into process env") {
+  cleanup({"DENV_DB", "DENV_PORT"});
+
+  TempDir tmp;
+  tmp.write(".env", "DENV_DB=postgres://localhost/test\nDENV_PORT=9999\n");
+
+  auto result = dotenvpp::load_file(tmp.path() / ".env");
+
+  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.keys_loaded, std::size_t(2));
+  EXPECT_EQ(dotenvpp::get("DENV_DB"), "postgres://localhost/test");
+  EXPECT_EQ(dotenvpp::get("DENV_PORT"), "9999");
+
+  cleanup({"DENV_DB", "DENV_PORT"});
+}
+
+TEST("load_file: overwrite=false preserves existing env var") {
+  cleanup({"DENV_EXISTING"});
+  dotenvpp::set("DENV_EXISTING", "original");
+
+  TempDir tmp;
+  tmp.write(".env", "DENV_EXISTING=overwritten\n");
+
+  auto result = dotenvpp::load_file(tmp.path() / ".env", false);
+
+  EXPECT_EQ(result.keys_skipped, std::size_t(1));
+  EXPECT_EQ(dotenvpp::get("DENV_EXISTING"), "original");
+
+  cleanup({"DENV_EXISTING"});
+}
+
+TEST("load_file: overwrite=true replaces existing env var") {
+  cleanup({"DENV_OW"});
+  dotenvpp::set("DENV_OW", "old");
+
+  TempDir tmp;
+  tmp.write(".env", "DENV_OW=new\n");
+
+  dotenvpp::load_file(tmp.path() / ".env", true);
+
+  EXPECT_EQ(dotenvpp::get("DENV_OW"), "new");
+  cleanup({"DENV_OW"});
+}
+
+TEST("load_file: multiline value via \\n escape") {
+  cleanup({"DENV_MULTI"});
+
+  TempDir tmp;
+  tmp.write(".env", "DENV_MULTI=\"line1\\nline2\"\n");
+
+  dotenvpp::load_file(tmp.path() / ".env");
+
+  EXPECT_EQ(dotenvpp::get("DENV_MULTI"), "line1\nline2");
+  cleanup({"DENV_MULTI"});
+}
+
+TEST("load: root-first priority means root file's key wins over src") {
+  cleanup({"DENV_PRIORITY"});
+
+  TempDir tmp;
+  tmp.write(".env", "DENV_PRIORITY=from_root\n");
+  tmp.write("src/.env", "DENV_PRIORITY=from_src\n");
+
+  dotenvpp::LoadOptions opts;
+  opts.root = tmp.path();
+  opts.overwrite = false;
+  opts.search.root_first_priority = true;
+
+  dotenvpp::load(opts);
+  EXPECT_EQ(dotenvpp::get("DENV_PRIORITY"), "from_root");
+
+  cleanup({"DENV_PRIORITY"});
+}
+
+TEST("load: throw_if_missing throws when no .env found") {
+  TempDir tmp;
+
+  dotenvpp::LoadOptions opts;
+  opts.throw_if_missing = true;
+  opts.root = tmp.path();
+
+  EXPECT_THROW(dotenvpp::load(opts), std::runtime_error);
+}
+
+TEST("load: no throw by default when no .env found") {
+  TempDir tmp;
+
+  dotenvpp::LoadOptions opts;
+  opts.root = tmp.path();
+
+  auto result = dotenvpp::load(opts);
+  EXPECT_FALSE(result.ok());
+}
+
+TEST("get: returns default_value when key not set") {
+  dotenvpp::unset("DENV_MISSING_XYZ");
+  EXPECT_EQ(dotenvpp::get("DENV_MISSING_XYZ", "fallback"), "fallback");
+}
+
+TEST("get: returns empty string default when no default given") {
+  dotenvpp::unset("DENV_MISSING_XYZ");
+  EXPECT_EQ(dotenvpp::get("DENV_MISSING_XYZ"), "");
+}
+
+TEST("has: true for set key") {
+  dotenvpp::set("DENV_HAS_KEY", "1");
+  EXPECT_TRUE(dotenvpp::has("DENV_HAS_KEY"));
+  dotenvpp::unset("DENV_HAS_KEY");
+}
+
+TEST("has: false for unset key") {
+  dotenvpp::unset("DENV_UNSET_KEY_ZZZ");
+  EXPECT_FALSE(dotenvpp::has("DENV_UNSET_KEY_ZZZ"));
+}
+
+TEST("require: returns value when key is set") {
+  dotenvpp::set("DENV_REQUIRED", "present");
+  EXPECT_EQ(dotenvpp::require("DENV_REQUIRED"), "present");
+  dotenvpp::unset("DENV_REQUIRED");
+}
+
+TEST("require: throws runtime_error when key is not set") {
+  dotenvpp::unset("DENV_MISSING_REQUIRED");
+  EXPECT_THROW(dotenvpp::require("DENV_MISSING_REQUIRED"), std::runtime_error);
+}
+
+TEST("set and unset round-trip") {
+  dotenvpp::set("DENV_ROUNDTRIP", "hello");
+  EXPECT_TRUE(dotenvpp::has("DENV_ROUNDTRIP"));
+  dotenvpp::unset("DENV_ROUNDTRIP");
+  EXPECT_FALSE(dotenvpp::has("DENV_ROUNDTRIP"));
+}
+
 // Test runner
 
 int main() {
