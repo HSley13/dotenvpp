@@ -125,6 +125,98 @@ private:
   fs::path path_;
 };
 
+// Parser tests
+
+TEST("parser: basic KEY=VALUE") {
+  auto map = dotenvpp::Parser::parse("KEY=VALUE\n");
+  EXPECT_EQ(map.at("KEY"), "VALUE");
+}
+
+TEST("parser: multiple entries") {
+  auto map = dotenvpp::Parser::parse("HOST=localhost\nPORT=5432\nNAME=mydb\n");
+  EXPECT_EQ(map.at("HOST"), "localhost");
+  EXPECT_EQ(map.at("PORT"), "5432");
+  EXPECT_EQ(map.at("NAME"), "mydb");
+  EXPECT_EQ(map.size(), std::size_t(3));
+}
+
+TEST("parser: blank lines and comments are ignored") {
+  auto map = dotenvpp::Parser::parse("# This is a comment\n\nKEY=value\n   # indented comment\n\n");
+  EXPECT_EQ(map.size(), std::size_t(1));
+  EXPECT_EQ(map.at("KEY"), "value");
+}
+
+TEST("parser: whitespace around = is stripped") {
+  auto map = dotenvpp::Parser::parse("KEY  =  VALUE\n");
+  EXPECT_EQ(map.at("KEY"), "VALUE");
+}
+
+TEST("parser: empty value is valid") {
+  auto map = dotenvpp::Parser::parse("EMPTY=\n");
+  EXPECT_EQ(map.at("EMPTY"), "");
+}
+
+TEST("parser: double-quoted value strips quotes") {
+  auto map = dotenvpp::Parser::parse("KEY=\"hello world\"\n");
+  EXPECT_EQ(map.at("KEY"), "hello world");
+}
+
+TEST("parser: single-quoted value strips quotes") {
+  auto map = dotenvpp::Parser::parse("KEY='hello world'\n");
+  EXPECT_EQ(map.at("KEY"), "hello world");
+}
+
+TEST("parser: escape \\n in double-quoted value becomes real newline") {
+  auto map = dotenvpp::Parser::parse("KEY=\"line1\\nline2\"\n");
+  EXPECT_EQ(map.at("KEY"), "line1\nline2");
+}
+
+TEST("parser: escaped quote inside double-quoted value") {
+  auto map = dotenvpp::Parser::parse("KEY=\"say \\\"hi\\\"\"\n");
+  EXPECT_EQ(map.at("KEY"), "say \"hi\"");
+}
+
+TEST("parser: inline comment stripped from unquoted value") {
+  auto map = dotenvpp::Parser::parse("PORT=8080 # default port\n");
+  EXPECT_EQ(map.at("PORT"), "8080");
+}
+
+TEST("parser: hash without preceding space is kept in value") {
+  auto map = dotenvpp::Parser::parse("TAG=my#tag\n");
+  EXPECT_EQ(map.at("TAG"), "my#tag");
+}
+
+TEST("parser: Windows CRLF line endings handled") {
+  auto map = dotenvpp::Parser::parse("KEY=VALUE\r\n");
+  EXPECT_EQ(map.at("KEY"), "VALUE");
+}
+
+TEST("parser: value containing = sign after first") {
+  auto map = dotenvpp::Parser::parse("URL=a=b=c\n");
+  EXPECT_EQ(map.at("URL"), "a=b=c");
+}
+
+TEST("parser: duplicate key — first occurrence wins") {
+  auto map = dotenvpp::Parser::parse("KEY=first\nKEY=second\n");
+  EXPECT_EQ(map.at("KEY"), "first");
+}
+
+TEST("parser: throws ParseError on line with no =") {
+  EXPECT_THROW(dotenvpp::Parser::parse("NOTAVALIDLINE\n"), dotenvpp::ParseError);
+}
+
+TEST("parser: throws ParseError on empty key") {
+  EXPECT_THROW(dotenvpp::Parser::parse("=VALUE\n"), dotenvpp::ParseError);
+}
+
+TEST("parser: throws ParseError on unterminated quoted value") {
+  EXPECT_THROW(dotenvpp::Parser::parse("KEY=\"unterminated\n"), dotenvpp::ParseError);
+}
+
+TEST("parser: throws ParseError on invalid key character (hyphen)") {
+  EXPECT_THROW(dotenvpp::Parser::parse("MY-KEY=value\n"), dotenvpp::ParseError);
+}
+
 // Test runner
 
 int main() {
