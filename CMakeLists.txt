@@ -62,3 +62,45 @@ if(DOTENVPP_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+# Generate install rules so the library can be consumed via find_package().
+if(DOTENVPP_INSTALL)
+    include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
+
+    install(TARGETS dotenvpp
+        EXPORT  dotenvppTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    install(DIRECTORY include/dotenvpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    install(EXPORT dotenvppTargets
+        FILE        dotenvppTargets.cmake
+        NAMESPACE   dotenvpp::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dotenvpp
+    )
+
+    configure_package_config_file(
+        cmake/dotenvppConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/dotenvppConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dotenvpp
+    )
+
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/dotenvppConfigVersion.cmake
+        VERSION       ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/dotenvppConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/dotenvppConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dotenvpp
+    )
+endif()
