@@ -6,4 +6,3 @@ mnt/
 *.so
 *.dylib
 CMakeUserPresets.json
-_build_history.py
