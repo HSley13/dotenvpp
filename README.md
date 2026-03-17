@@ -18,6 +18,7 @@ A zero-dependency C++20 library that recursively searches your project tree for 
 ## Continuous Integration
 
 This project is automatically built and tested on:
+
 - Windows (MSVC)
 - Linux (GCC/Clang)
 - macOS (Apple Clang)
@@ -68,7 +69,7 @@ target_link_libraries(your_target PRIVATE dotenvpp::dotenvpp)
 ### Basic
 
 ```cpp
-#include <dotenvpp/dotenv.hpp>
+#include <dotenv.hpp>
 #include <iostream>
 
 int main() {
