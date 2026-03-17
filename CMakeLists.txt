@@ -44,6 +44,9 @@ target_compile_definitions(dotenvpp
         DOTENVPP_SOURCE_DIR_HINT=${CMAKE_SOURCE_DIR}
 )
 
+if (MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
 # Enable strict warnings only when building standalone (not as a subdependency).
 if(PROJECT_IS_TOP_LEVEL)
     if(MSVC)

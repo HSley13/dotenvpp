@@ -1,26 +1,26 @@
 name: Windows CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 jobs:
-  build-and-test:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    build-and-test:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+            - name: Set up MSVC
+              uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake
-        run: cmake -B build -S . -DDOTENVPP_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+            - name: Configure CMake
+              run: cmake -B build -S . -DDOTENVPP_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
-        run: cmake --build build --config Release
+            - name: Build
+              run: cmake --build build --config Release
 
-      - name: Run tests
-        run: ctest --test-dir build --output-on-failure --build-config Release
+            - name: Run tests
+              run: ctest --test-dir build --output-on-failure --build-config Release
