@@ -28,18 +28,12 @@ include(FetchContent)
 
 FetchContent_Declare(
     dotenvpp
-    GIT_REPOSITORY https://github.com/<your-username>/dotenvpp.git
+    GIT_REPOSITORY https://github.com/HSley13/dotenvpp.git
     GIT_TAG        v0.1.0
 )
 FetchContent_MakeAvailable(dotenvpp)
 
 target_link_libraries(your_target PRIVATE dotenvpp::dotenvpp)
-```
-
-You can also use a local path during development:
-
-```cmake
-FetchContent_Declare(dotenvpp SOURCE_DIR /path/to/dotenvpp)
 ```
 
 ### Option B: System install + find_package
@@ -149,26 +143,26 @@ KEY=second  # ignored
 
 ## API Reference
 
-| Function | Description |
-|----------|-------------|
-| `load(opts)` | Search for `.env` files and inject into env. Returns `LoadResult`. |
-| `load_file(path, overwrite)` | Parse a single `.env` file and inject into env. |
-| `get(key, default)` | Read an env var. Returns `default` (or `""`) if unset. |
-| `has(key)` | Check if an env var is set. |
-| `require(key)` | Read an env var. Throws `std::runtime_error` if unset. |
-| `set(key, value, overwrite)` | Set an env var directly. |
-| `unset(key)` | Remove an env var. |
+| Function                     | Description                                                        |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `load(opts)`                 | Search for `.env` files and inject into env. Returns `LoadResult`. |
+| `load_file(path, overwrite)` | Parse a single `.env` file and inject into env.                    |
+| `get(key, default)`          | Read an env var. Returns `default` (or `""`) if unset.             |
+| `has(key)`                   | Check if an env var is set.                                        |
+| `require(key)`               | Read an env var. Throws `std::runtime_error` if unset.             |
+| `set(key, value, overwrite)` | Set an env var directly.                                           |
+| `unset(key)`                 | Remove an env var.                                                 |
 
 ### SearchOptions
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `max_depth` | `size_t` | `8` | Max directory recursion depth |
-| `filename` | `string` | `".env"` | Filename to search for |
-| `allowed_dirs` | `unordered_set<string>` | `src`, `test`, `config`, ... | Directories to enter |
-| `search_root` | `bool` | `true` | Also check the root directory |
-| `root_first_priority` | `bool` | `true` | Shorter paths = higher priority |
-| `follow_symlinks` | `bool` | `false` | Follow symlinks during traversal |
+| Field                 | Type                    | Default                      | Description                      |
+| --------------------- | ----------------------- | ---------------------------- | -------------------------------- |
+| `max_depth`           | `size_t`                | `8`                          | Max directory recursion depth    |
+| `filename`            | `string`                | `".env"`                     | Filename to search for           |
+| `allowed_dirs`        | `unordered_set<string>` | `src`, `test`, `config`, ... | Directories to enter             |
+| `search_root`         | `bool`                  | `true`                       | Also check the root directory    |
+| `root_first_priority` | `bool`                  | `true`                       | Shorter paths = higher priority  |
+| `follow_symlinks`     | `bool`                  | `false`                      | Follow symlinks during traversal |
 
 ### Directory Search Behavior
 

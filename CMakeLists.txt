@@ -1,4 +1,3 @@
-# Minimum CMake version required for C++20 support and modern features.
 cmake_minimum_required(VERSION 3.21)
 
 # Project metadata.
