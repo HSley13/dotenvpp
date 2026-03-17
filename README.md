@@ -186,7 +186,7 @@ Directories like `build/`, `.git/`, `node_modules/`, etc. are never entered.
 ## Build & Test
 
 ```bash
-git clone https://github.com/<your-username>/dotenvpp.git
+git clone https://github.com/HSley13/dotenvpp.git
 cd dotenvpp
 cmake -S . -B build
 cmake --build build
