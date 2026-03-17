@@ -1,5 +1,8 @@
 # dotenvpp
 
+[![Windows](https://github.com/HSley13/dotenvpp/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/HSley13/dotenvpp/actions/workflows/windows-ci.yml)
+[![Unix](https://github.com/HSley13/dotenvpp/actions/workflows/unix-ci.yml/badge.svg)](https://github.com/HSley13/dotenvpp/actions/workflows/unix-ci.yml)
+
 A zero-dependency C++20 library that recursively searches your project tree for `.env` files, parses them, and injects key-value pairs into the process environment.
 
 ## Features
@@ -9,8 +12,15 @@ A zero-dependency C++20 library that recursively searches your project tree for 
 - Inline comments, blank lines, and `#` full-line comments
 - Priority control: root-first (default) or leaf-first
 - Overwrite control: protect existing env vars or let `.env` win
-- Cross-platform: POSIX (`setenv`) and Windows (`_putenv_s`)
+- Cross-platform: Windows, Linux, and macOS (tested via CI)
 - CMake `FetchContent` and `find_package` ready
+
+## Continuous Integration
+
+This project is automatically built and tested on:
+- Windows (MSVC)
+- Linux (GCC/Clang)
+- macOS (Apple Clang)
 
 ## Requirements
 
