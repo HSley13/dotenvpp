@@ -119,7 +119,7 @@ void Searcher::walk(const std::filesystem::path &dir, std::size_t depth, std::ve
 // Case-insensitive check whether a directory name is in the allow-list.
 bool Searcher::is_allowed_dir(const std::string &dir_name) const noexcept {
   std::string lower = dir_name;
-  std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+  std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return opts_.allowed_dirs.count(lower) > 0;
 }
 
